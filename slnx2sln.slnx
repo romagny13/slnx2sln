@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Éléments de solution/">
+    <File Path=".gitignore" />
+    <File Path="LICENSE.txt" />
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="slnx2sln/slnx2sln.csproj" />
+</Solution>
