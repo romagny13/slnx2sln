@@ -39,8 +39,10 @@ dotnet tool uninstall --global slnx2sln
 ## Usage
 
 ```bash
-slnx2sln <file.slnx> [file.sln]   # Convert .slnx → .sln
-slnx2sln <file.sln>  [file.slnx]  # Convert .sln  → .slnx
+slnx2sln <file.slnx> [file.sln]          # Convert .slnx → .sln
+slnx2sln <file.sln>  [file.slnx]         # Convert .sln  → .slnx
+slnx2sln sync <file.sln|.slnx>           # Sync pair (newer wins)
+slnx2sln sync <file.sln> <file.slnx>
 ```
 
 ### Examples
@@ -53,6 +55,11 @@ slnx2sln MySolution.slnx Output.sln
 # .sln → .slnx
 slnx2sln MySolution.sln
 slnx2sln MySolution.sln Output.slnx
+
+# Sync (the newer file updates the older one)
+slnx2sln sync MySolution.slnx
+slnx2sln sync MySolution.sln
+slnx2sln sync MySolution.sln MySolution.slnx
 ```
 
 If no output file is specified, the tool uses the same name with the target extension.
