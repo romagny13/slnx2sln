@@ -1,8 +1,13 @@
 <Solution>
+  <Folder Name="/src/">
+    <Project Path="src/slnx2sln/slnx2sln.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/slnx2sln.Tests/slnx2sln.Tests.csproj" />
+  </Folder>
   <Folder Name="/Éléments de solution/">
     <File Path=".gitignore" />
     <File Path="LICENSE.txt" />
     <File Path="README.md" />
   </Folder>
-  <Project Path="slnx2sln/slnx2sln.csproj" />
 </Solution>

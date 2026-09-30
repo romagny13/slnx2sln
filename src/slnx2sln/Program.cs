@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.SolutionPersistence.Serializer;
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -9,7 +10,16 @@ namespace slnx2sln
 {
     public class Program
     {
-        static async Task<int> Main(string[] args)
+        static Task<int> Main(string[] args)
+        {
+            return RunAsync(args, Directory.GetCurrentDirectory());
+        }
+
+        /// <summary>
+        /// Point d'entrée testable. <paramref name="workingDirectory"/> est utilisé
+        /// par "sync" sans argument pour chercher la solution.
+        /// </summary>
+        public static async Task<int> RunAsync(string[] args, string workingDirectory = null)
         {
             if (args.Length < 1)
             {
@@ -17,27 +27,40 @@ namespace slnx2sln
                 return 1;
             }
 
-            // Optional: "sync" as first argument
-            bool isSync = string.Equals(args[0], "sync", StringComparison.OrdinalIgnoreCase);
-            string[] fileArgs = isSync ? args[1..] : args;
+            if (workingDirectory == null)
+                workingDirectory = Directory.GetCurrentDirectory();
 
-            if (fileArgs.Length < 1)
-            {
-                PrintUsage();
-                return 1;
-            }
+            bool isSync = string.Equals(args[0], "sync", StringComparison.OrdinalIgnoreCase);
+            string[] fileArgs = isSync ? args.Skip(1).ToArray() : args;
 
             try
             {
                 if (isSync)
                 {
+                    // "slnx2sln sync" : détection automatique dans le dossier courant
+                    if (fileArgs.Length == 0)
+                    {
+                        if (!TryFindSolutionPairInDirectory(
+                                workingDirectory,
+                                out string autoSlnPath,
+                                out string autoSlnxPath,
+                                out string findError))
+                        {
+                            Console.Error.WriteLine(findError);
+                            return 1;
+                        }
+
+                        return await SyncAsync(autoSlnPath, autoSlnxPath);
+                    }
+
+                    // "slnx2sln sync <file> [file]" : comportement existant
                     string path1 = fileArgs[0];
-                    string? path2 = fileArgs.Length > 1 ? fileArgs[1] : null;
+                    string path2 = fileArgs.Length > 1 ? fileArgs[1] : null;
                     return await SyncAsync(path1, path2);
                 }
 
                 string inputPath = Path.GetFullPath(fileArgs[0]);
-                string? outputPath = fileArgs.Length > 1 ? Path.GetFullPath(fileArgs[1]) : null;
+                string outputPath = fileArgs.Length > 1 ? Path.GetFullPath(fileArgs[1]) : null;
 
                 if (!File.Exists(inputPath))
                 {
@@ -83,10 +106,10 @@ namespace slnx2sln
         /// </summary>
         public static bool TryResolveSolutionPair(
             string path1,
-            string? path2,
+            string path2,
             out string slnPath,
             out string slnxPath,
-            out string? error)
+            out string error)
         {
             slnPath = string.Empty;
             slnxPath = string.Empty;
@@ -145,7 +168,7 @@ namespace slnx2sln
             string slnxPath,
             out string sourcePath,
             out string targetPath,
-            out string? error)
+            out string error)
         {
             sourcePath = string.Empty;
             targetPath = string.Empty;
@@ -196,7 +219,7 @@ namespace slnx2sln
         // Conversion
         // -------------------------------------------------------------------------
 
-        public static async Task<int> ConvertSlnxToSlnAsync(string slnxPath, string? outputPath = null)
+        public static async Task<int> ConvertSlnxToSlnAsync(string slnxPath, string outputPath = null)
         {
             string slnPath = outputPath ?? Path.ChangeExtension(slnxPath, ".sln");
 
@@ -207,7 +230,7 @@ namespace slnx2sln
             return 0;
         }
 
-        public static async Task<int> ConvertSlnToSlnxAsync(string slnPath, string? outputPath = null)
+        public static async Task<int> ConvertSlnToSlnxAsync(string slnPath, string outputPath = null)
         {
             string slnxPath = outputPath ?? Path.ChangeExtension(slnPath, ".slnx");
 
@@ -219,18 +242,18 @@ namespace slnx2sln
         }
 
         // -------------------------------------------------------------------------
-        // Auto sync
+        // Sync
         // -------------------------------------------------------------------------
 
-        public static async Task<int> SyncAsync(string path1, string? path2 = null)
+        public static async Task<int> SyncAsync(string path1, string path2 = null)
         {
-            if (!TryResolveSolutionPair(path1, path2, out string slnPath, out string slnxPath, out string? resolveError))
+            if (!TryResolveSolutionPair(path1, path2, out string slnPath, out string slnxPath, out string resolveError))
             {
                 Console.Error.WriteLine(resolveError);
                 return 1;
             }
 
-            if (!TryResolveSyncDirection(slnPath, slnxPath, out string sourcePath, out string targetPath, out string? syncError))
+            if (!TryResolveSyncDirection(slnPath, slnxPath, out string sourcePath, out string targetPath, out string syncError))
             {
                 Console.Error.WriteLine(syncError);
                 return 1;
@@ -248,11 +271,66 @@ namespace slnx2sln
             return 1;
         }
 
+        /// <summary>
+        /// Cherche dans <paramref name="directory"/> (non récursif) la paire .sln / .slnx.
+        /// Échoue si aucun fichier n'est trouvé ou si plusieurs noms de solutions différents existent.
+        /// Si un seul des deux fichiers existe, le chemin de l'autre est déduit.
+        /// </summary>
+        public static bool TryFindSolutionPairInDirectory(
+            string directory,
+            out string slnPath,
+            out string slnxPath,
+            out string error)
+        {
+            slnPath = string.Empty;
+            slnxPath = string.Empty;
+            error = null;
+
+            // Filtrage explicite de l'extension : certains filtres "*.sln" peuvent
+            // aussi remonter des ".slnx" selon la plateforme.
+            string[] slnFiles = Directory.GetFiles(directory, "*.sln")
+                .Where(f => GetExtension(f) == ".sln")
+                .ToArray();
+            string[] slnxFiles = Directory.GetFiles(directory, "*.slnx")
+                .Where(f => GetExtension(f) == ".slnx")
+                .ToArray();
+
+            if (slnFiles.Length == 0 && slnxFiles.Length == 0)
+            {
+                error = "No .sln or .slnx file found in the current directory.";
+                return false;
+            }
+
+            // Multiple distinct solution names → fail
+            var names = slnFiles
+                .Select(f => Path.GetFileNameWithoutExtension(f))
+                .Concat(slnxFiles.Select(f => Path.GetFileNameWithoutExtension(f)))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (names.Count > 1)
+            {
+                error = $"Multiple solutions found ({string.Join(", ", names)}). Please specify the file.";
+                return false;
+            }
+
+            string name = names[0];
+            slnPath = slnFiles.FirstOrDefault(f =>
+                Path.GetFileNameWithoutExtension(f).Equals(name, StringComparison.OrdinalIgnoreCase))
+                ?? Path.Combine(directory, name + ".sln");
+            slnxPath = slnxFiles.FirstOrDefault(f =>
+                Path.GetFileNameWithoutExtension(f).Equals(name, StringComparison.OrdinalIgnoreCase))
+                ?? Path.Combine(directory, name + ".slnx");
+
+            return true;
+        }
+
         private static void PrintUsage()
         {
             Console.WriteLine("Usage:");
             Console.WriteLine("  slnx2sln <file.slnx> [file.sln]     # Convert .slnx → .sln");
             Console.WriteLine("  slnx2sln <file.sln>  [file.slnx]    # Convert .sln  → .slnx");
+            Console.WriteLine("  slnx2sln sync                       # Auto-sync the solution found in the current directory");
             Console.WriteLine("  slnx2sln sync <file.sln|.slnx>      # Sync pair (newer wins)");
             Console.WriteLine("  slnx2sln sync <file.sln> <file.slnx>");
         }
