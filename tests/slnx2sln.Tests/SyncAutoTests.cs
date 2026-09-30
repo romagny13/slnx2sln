@@ -160,10 +160,6 @@ namespace slnx2sln.Tests
             Assert.That(slnPath, Is.EqualTo(Path.Combine(_dir, "App.sln")));
         }
 
-        // ---------------------------------------------------------------------
-        // RunAsync : "sync" sans argument
-        // ---------------------------------------------------------------------
-
         [Test]
         public async Task Run_SyncWithoutArgs_NoSolution_ReturnsError()
         {
@@ -254,9 +250,6 @@ namespace slnx2sln.Tests
             Assert.That(File.Exists(Path.Combine(_dir, "App.sln")), Is.True);
         }
 
-        // ---------------------------------------------------------------------
-        // Non-régression : "sync" avec fichier(s) explicite(s)
-        // ---------------------------------------------------------------------
 
         [Test]
         public async Task Run_SyncWithSingleFile_StillWorks()
@@ -284,7 +277,6 @@ namespace slnx2sln.Tests
         [Test]
         public async Task Run_SyncWithExplicitFile_IgnoresOtherSolutionsInDirectory()
         {
-            // Plusieurs solutions présentes : pas d'erreur si l'utilisateur en désigne une
             string a = Create("A.slnx", MinimalSlnx);
             Create("B.slnx", MinimalSlnx);
 

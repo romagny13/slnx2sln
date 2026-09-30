@@ -16,8 +16,8 @@ namespace slnx2sln
         }
 
         /// <summary>
-        /// Point d'entrée testable. <paramref name="workingDirectory"/> est utilisé
-        /// par "sync" sans argument pour chercher la solution.
+        /// Testable entry point. <paramref name="workingDirectory"/> is used
+        /// by "sync" with no arguments to look for the solution.
         /// </summary>
         public static async Task<int> RunAsync(string[] args, string workingDirectory = null)
         {
@@ -37,7 +37,7 @@ namespace slnx2sln
             {
                 if (isSync)
                 {
-                    // "slnx2sln sync" : détection automatique dans le dossier courant
+                    // "slnx2sln sync": automatic detection in the current directory
                     if (fileArgs.Length == 0)
                     {
                         if (!TryFindSolutionPairInDirectory(
@@ -53,7 +53,7 @@ namespace slnx2sln
                         return await SyncAsync(autoSlnPath, autoSlnxPath);
                     }
 
-                    // "slnx2sln sync <file> [file]" : comportement existant
+                    // "slnx2sln sync <file> [file]"
                     string path1 = fileArgs[0];
                     string path2 = fileArgs.Length > 1 ? fileArgs[1] : null;
                     return await SyncAsync(path1, path2);
@@ -159,10 +159,6 @@ namespace slnx2sln
             return false;
         }
 
-        /// <summary>
-        /// Decides which file is the source (newer or only existing) and which is the target.
-        /// Returns false if neither file exists.
-        /// </summary>
         public static bool TryResolveSyncDirection(
             string slnPath,
             string slnxPath,
@@ -272,9 +268,9 @@ namespace slnx2sln
         }
 
         /// <summary>
-        /// Cherche dans <paramref name="directory"/> (non récursif) la paire .sln / .slnx.
-        /// Échoue si aucun fichier n'est trouvé ou si plusieurs noms de solutions différents existent.
-        /// Si un seul des deux fichiers existe, le chemin de l'autre est déduit.
+        /// Searches <paramref name="directory"/> (non-recursive) for the .sln / .slnx pair.
+        /// Fails if no file is found or if several different solution names exist.
+        /// If only one of the two files exists, the path of the other is inferred.
         /// </summary>
         public static bool TryFindSolutionPairInDirectory(
             string directory,
@@ -286,8 +282,8 @@ namespace slnx2sln
             slnxPath = string.Empty;
             error = null;
 
-            // Filtrage explicite de l'extension : certains filtres "*.sln" peuvent
-            // aussi remonter des ".slnx" selon la plateforme.
+            // Explicit extension filtering: some "*.sln" filters may also
+            // return ".slnx" files depending on the platform.
             string[] slnFiles = Directory.GetFiles(directory, "*.sln")
                 .Where(f => GetExtension(f) == ".sln")
                 .ToArray();
