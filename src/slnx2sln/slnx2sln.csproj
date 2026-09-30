@@ -4,13 +4,18 @@
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net8.0</TargetFramework>
 
+		<!-- Tool -->
+		<PackAsTool>true</PackAsTool>
+		<ToolCommandName>slnx2sln</ToolCommandName>
+
 		<IsPackable>true</IsPackable>
 		<!-- Creates the .nupkg file on each build -->
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 
 		<!-- Package info -->
+		<Version>1.2.0</Version>
 		<Authors>romagny13</Authors>
-		<Description>Converts between modern .slnx and classic .sln solution files.</Description>
+		<Description>Converts between modern .slnx and classic .sln solution files, with an auto-sync command that keeps a .sln/.slnx pair up to date.</Description>
 		<PackageTags>sln;slnx;solution;visualstudio;dotnet;tool</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 
@@ -21,12 +26,11 @@
 
 		<!-- Optional but recommended -->
 		<Copyright>Copyright (c) romagny13</Copyright>
-		<PackageReleaseNotes>Initial release. Supports bidirectional conversion between .sln and .slnx.</PackageReleaseNotes>
+		<PackageReleaseNotes>Add "slnx2sln sync" without arguments: automatically detects the .sln/.slnx solution in the current directory and syncs it (newer file wins). Fails if several solutions with different names are found. Explicit sync forms are unchanged.</PackageReleaseNotes>
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Microsoft.VisualStudio.SolutionPersistence" Version="1.0.52" />
+		<PackageReference Include="Microsoft.VisualStudio.SolutionPersistence" Version="1.0.52" />
 	</ItemGroup>
-
 
 </Project>
